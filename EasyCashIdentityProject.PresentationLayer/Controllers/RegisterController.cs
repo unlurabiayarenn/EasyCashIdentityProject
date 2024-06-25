@@ -65,6 +65,8 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
 					smtpClient.Authenticate("rabiayarenunlu@gmail.com", "yipn uolc pihr sjvt");
 					smtpClient.Send(mimeMessage);
 					smtpClient.Disconnect(true);
+
+					TempData["Mail"] = appUserRegisterDto.Email;
 					
 					return RedirectToAction("Index","ConfirmMail");
 				}
