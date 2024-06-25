@@ -1,7 +1,9 @@
 ﻿using EasyCashIdentityProject.DtoLayer.Dtos.AppUserDtos;
 using EasyCashIdentityProject.EntityLayer.Concrete;
+using MailKit.Net.Smtp;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MimeKit;
 
 namespace EasyCashIdentityProject.PresentationLayer.Controllers
 {
@@ -26,6 +28,9 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
 			//return View();
 			if(ModelState.IsValid)
 			{
+				Random random = new Random();
+				int code;
+				code = random.Next(100000, 1000000);
 				AppUser appUser = new AppUser()
 				{
 					UserName = appUserRegisterDto.UserName,
@@ -33,15 +38,35 @@ namespace EasyCashIdentityProject.PresentationLayer.Controllers
 					Surname = appUserRegisterDto.Surname,
 					Email = appUserRegisterDto.Email,
 					City = "samsun",
-					District =	"samsun",
-					ImageUrl= "samsun"
+					District = "samsun",
+					ImageUrl = "samsun",
+					ConfirmCode = code
 				};
 
 				var result = await _userManager.CreateAsync(appUser,appUserRegisterDto.Password);
 
 				if(result.Succeeded)
 				{
-					return RedirectToAction("Index","ConfirmaMail");
+					MimeMessage mimeMessage = new MimeMessage();
+					MailboxAddress mailboxAddressFrom = new MailboxAddress("Easy Cash Admin", "rabiayarenunlu@gmail.com");
+					MailboxAddress mailboxAddressTo = new MailboxAddress("User", appUser.Email);
+
+					mimeMessage.From.Add(mailboxAddressFrom);
+					mimeMessage.To.Add(mailboxAddressTo);
+
+					var bodyBuilder = new BodyBuilder();
+					bodyBuilder.TextBody = "Kayıt işlemini gerçekleştirmek için onay kodunuz: " + code; //appUser.ConfirmCode;
+					mimeMessage.Body = bodyBuilder.ToMessageBody();
+
+					mimeMessage.Subject = "Onay Kodu";
+
+					SmtpClient smtpClient = new SmtpClient();
+					smtpClient.Connect("smtp.gmail.com", 587, false);
+					smtpClient.Authenticate("rabiayarenunlu@gmail.com", "yipn uolc pihr sjvt");
+					smtpClient.Send(mimeMessage);
+					smtpClient.Disconnect(true);
+					
+					return RedirectToAction("Index","ConfirmMail");
 				}
 				else
 				{
